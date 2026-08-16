@@ -201,11 +201,11 @@
   @keyframes underline-grow { to { width:96px; } }
   @keyframes article-in { from { opacity:0; transform:translateY(14px); filter:blur(5px); } }
   .article-meta { display:flex; flex-wrap:wrap; gap:14px; align-items:center; color:#9a9a9a; font-size:13.5px; margin-bottom:34px; animation:article-in .7s ease-out .12s backwards; }
-  .article-body p, .article-body .code-block {
+  .article-body p, .article-body .code-block, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol {
     opacity:0; transform:translateY(14px);
     transition:opacity .6s ease, transform .6s ease, background-color .6s ease, box-shadow .6s ease;
   }
-  .article-body p.in, .article-body .code-block.in { opacity:1; transform:none; }
+  .article-body p.in, .article-body .code-block.in, .article-body > img.in, .article-body h1.in, .article-body h2.in, .article-body h3.in, .article-body h4.in, .article-body blockquote.in, .article-body ul.in, .article-body ol.in { opacity:1; transform:none; }
   /* 阅读中高亮：段落进入视口短暂亮起 */
   .article-body p.reading {
     background:var(--accent-soft);
@@ -213,6 +213,35 @@
     border-radius:6px;
   }
   .article-body p { margin-bottom:20px; color:#2b2b2b; font-size:16px; line-height:1.9; }
+  /* 文章图片 */
+  .article-body > img {
+    display:block; max-width:100%; height:auto;
+    border-radius:10px; margin:24px auto;
+    box-shadow:0 8px 24px rgba(26,26,26,.10);
+  }
+  .article-body p img {
+    display:inline-block; vertical-align:middle; max-height:320px;
+    margin:0 4px; border-radius:6px; box-shadow:none;
+  }
+  /* Markdown 元素 */
+  .article-body h1 { font-size:24px; margin:34px 0 12px; }
+  .article-body h2 { font-size:21px; margin:30px 0 10px; }
+  .article-body h3 { font-size:18px; margin:26px 0 8px; }
+  .article-body h4 { font-size:16px; margin:22px 0 6px; }
+  .article-body ul, .article-body ol { margin:0 0 20px; padding-left:26px; color:#2b2b2b; }
+  .article-body li { margin-bottom:6px; line-height:1.8; }
+  .article-body blockquote {
+    margin:0 0 20px; padding:12px 18px;
+    border-left:3px solid var(--accent); background:var(--accent-soft);
+    border-radius:0 8px 8px 0; color:var(--muted); font-size:15px;
+  }
+  .inline-code {
+    background:var(--accent-soft); color:var(--accent);
+    padding:2px 6px; border-radius:5px; font-size:.9em;
+    font-family:"JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  }
+  .article-body a { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+  .article-body a:hover { opacity:.8; }
 
   /* ===== Toast ===== */
   .toast-wrap { position:fixed; top:20px; right:20px; z-index:300; display:flex; flex-direction:column; gap:10px; }
@@ -494,7 +523,8 @@
     nfDesc:    { zh: '你要找的页面不存在，可能被移动或删除了。', en: 'The page you are looking for does not exist, or has been moved.' },
     nfHome:    { zh: '返回首页', en: 'Back to home' },
     contentLoading: { zh: '正在加载正文…', en: 'Loading content…' },
-    contentFail:   { zh: '正文加载失败，请检查 data/content/<id>.js 文件内容是否完整', en: 'Failed to load content — check data/content/<id>.js' },
+    contentFail:   { zh: '正文加载失败，请检查 data/content/<id>.md 文件是否存在', en: 'Failed to load content — check data/content/<id>.md' },
+    contentEmpty:  { zh: '正文尚未发布', en: 'Content not published yet' },
   };
   function t(key) { return (I18N[key] || {})[curLang] || I18N[key].zh; }
   function tf(key, n) { return t(key).replace('{n}', n); }
@@ -654,27 +684,37 @@
     if (contentCache[id] !== undefined) return contentCache[id];
     return readLocalContent()[id] || '';
   }
-  /* 懒加载正文：data/content/<id>.js 文件优先（改文件刷新即生效），失败回退本地缓存 */
+  /* 懒加载正文：data/content/<id>.md 优先（fetch），回退旧 .js 格式与本地缓存 */
   function loadPostContent(id) {
-    // 清除该文章旧残留：防止文件语法错误时静默返回上一次加载的旧内容
-    var dict = window.__BLOG_CONTENT || {};
-    delete dict[id];
-    delete window['__BLOG_POST_' + id];
-    return loadScript(CONTENT_DIR + encodeURIComponent(id) + '.js').then(function () {
-      var c = (window.__BLOG_CONTENT || {})[id] || window['__BLOG_POST_' + id];  // 新字典格式 + 兼容旧格式
-      if (!c || typeof c.content !== 'string') { var e = new Error('bad content'); e.code = 'BAD_CONTENT'; throw e; }
-      contentCache[id] = c.content;
+    return fetch(CONTENT_DIR + encodeURIComponent(id) + '.md', { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('http ' + res.status);
+      return res.text();
+    }).then(function (md) {
+      contentCache[id] = md;
       var all = readLocalContent();
-      all[id] = c.content;
+      all[id] = md;
       writeLocalContent(all);
-      return c.content;
-    }).catch(function (e) {
-      if (e && e.code === 'BAD_CONTENT') throw e;   // 文件存在但语法错误 → 明确报错，不静默用旧值
-      // 文件缺失 → 回退本地缓存（旧文章仍可浏览）
-      if (contentCache[id] !== undefined) return contentCache[id];
-      var local = readLocalContent();
-      if (local[id]) { contentCache[id] = local[id]; return local[id]; }
-      throw e;
+      return md;
+    }).catch(function (e1) {
+      // 旧 .js 格式兼容（window.__BLOG_CONTENT 字典 / __BLOG_POST_ 旧格式）
+      var dict = window.__BLOG_CONTENT || {};
+      delete dict[id];
+      delete window['__BLOG_POST_' + id];
+      return loadScript(CONTENT_DIR + encodeURIComponent(id) + '.js').then(function () {
+        var c = (window.__BLOG_CONTENT || {})[id] || window['__BLOG_POST_' + id];
+        if (!c || typeof c.content !== 'string') { var e = new Error('bad content'); e.code = 'BAD_CONTENT'; throw e; }
+        contentCache[id] = c.content;
+        var all2 = readLocalContent();
+        all2[id] = c.content;
+        writeLocalContent(all2);
+        return c.content;
+      }).catch(function (e2) {
+        if (e2 && e2.code === 'BAD_CONTENT') throw e2;
+        if (contentCache[id] !== undefined) return contentCache[id];
+        var local = readLocalContent();
+        if (local[id]) { contentCache[id] = local[id]; return local[id]; }
+        throw e1;
+      });
     });
   }
   /* 动态加载数据脚本：file:// 与线上均可用（fetch 在 file 协议被浏览器禁止）；加时间戳防缓存 */
@@ -729,23 +769,79 @@
         return m;
       });
   }
-  /* 正文渲染：``` 围栏代码块 + 空行分段 */
+  /* 行内 Markdown：粗体/斜体/行内代码/链接（在 esc 之后处理，标记字符未被转义） */
+  function inlineMD(s) {
+    return s
+      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  /* 正文渲染：轻量 Markdown → HTML（标题/列表/引用/代码块/图片/段落） */
   function renderContent(content) {
-    var parts = String(content).split(/```/);
+    var md = String(content).replace(/\r\n/g, '\n');
+    var lines = md.split('\n');
     var html = '';
-    for (var i = 0; i < parts.length; i++) {
-      if (i % 2 === 1) {
-        var raw = parts[i].replace(/^\n/, '');
-        var nl = raw.indexOf('\n');
-        var lang = nl === -1 ? raw.trim() : raw.slice(0, nl).trim();
-        var code = nl === -1 ? '' : raw.slice(nl + 1);
-        html += '<pre class="code-block" data-lang="' + esc(lang) + '"><code>' + highlightC(code) + '</code></pre>';
-      } else {
-        parts[i].split(/\n+/).forEach(function (para) {
-          if (para.trim()) html += '<p>' + esc(para) + '</p>';
-        });
-      }
+    var list = null;
+    function closeList() {
+      if (list) { html += '</' + list + '>'; list = null; }
     }
+    for (var i = 0; i < lines.length; i++) {
+      var trimmed = lines[i].trim();
+      // 代码块围栏 ``` 或 ~~~
+      var fence = /^(```|~~~)([a-zA-Z0-9_-]*)\s*$/.exec(trimmed);
+      if (fence) {
+        closeList();
+        var lang = fence[2];
+        var code = [];
+        i++;  // 移到代码首行
+        while (i < lines.length && !/^(```|~~~)\s*$/.test(lines[i].trim())) { code.push(lines[i]); i++; }
+        html += '<pre class="code-block" data-lang="' + esc(lang) + '"><code>' + highlightC(code.join('\n')) + '</code></pre>';
+        continue;  // for 的 i++ 自然跳过闭合围栏行
+      }
+      // 标题
+      var h = /^(#{1,4})\s+(.*)$/.exec(trimmed);
+      if (h) {
+        closeList();
+        var lv = h[1].length;
+        html += '<h' + lv + '>' + inlineMD(esc(h[2])) + '</h' + lv + '>';
+        continue;
+      }
+      // 独立图片行
+      var img = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(trimmed);
+      if (img) {
+        closeList();
+        html += '<img src="' + esc(img[2]) + '" alt="' + esc(img[1]) + '" loading="lazy">';
+        continue;
+      }
+      // 无序列表
+      var ul = /^[-*]\s+(.*)$/.exec(trimmed);
+      if (ul) {
+        if (list !== 'ul') { closeList(); html += '<ul>'; list = 'ul'; }
+        html += '<li>' + inlineMD(esc(ul[1])) + '</li>';
+        continue;
+      }
+      // 有序列表
+      var ol = /^\d+\.\s+(.*)$/.exec(trimmed);
+      if (ol) {
+        if (list !== 'ol') { closeList(); html += '<ol>'; list = 'ol'; }
+        html += '<li>' + inlineMD(esc(ol[1])) + '</li>';
+        continue;
+      }
+      // 引用
+      var qt = /^>\s?(.*)$/.exec(trimmed);
+      if (qt) {
+        closeList();
+        html += '<blockquote>' + inlineMD(esc(qt[1])) + '</blockquote>';
+        continue;
+      }
+      // 空行
+      if (!trimmed) { closeList(); continue; }
+      // 普通段落（一行一段，段落间空行分隔）
+      closeList();
+      html += '<p>' + inlineMD(esc(trimmed)) + '</p>';
+    }
+    closeList();
     return html;
   }
   function fmtDate(d) { return d; }  // 种子数据已为 YYYY-MM-DD
@@ -781,7 +877,7 @@
   }
   /* 详情页段落与代码块逐个渐入 + 阅读中高亮 */
   function bindParagraphs() {
-    var ps = document.querySelectorAll('.article-body p, .article-body .code-block');
+    var ps = document.querySelectorAll('.article-body p, .article-body .code-block, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol');
     if (!ps.length) return;
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
@@ -1113,7 +1209,7 @@
     bindProgress();
     bindBackTop();
     window.scrollTo(0, 0);
-    // 正文按需加载：进入详情页才下载对应 data/content/<id>.js
+    // 正文按需加载：进入详情页才下载对应 data/content/<id>.md
     loadPostContent(id).then(function (content) {
       var body = document.querySelector('.article-body');
       if (!body) return;
@@ -1122,7 +1218,14 @@
       mountCopyButtons();
     }).catch(function () {
       var body = document.querySelector('.article-body');
-      if (body) body.innerHTML = '<p class="load-fail">' + t('contentFail') + '</p>';
+      if (!body) return;
+      if (post.summary) {
+        // 正文文件尚未发布：显示摘要兜底，不报错
+        body.innerHTML = '<blockquote>' + esc(post.summary) + '</blockquote>' +
+          '<p class="load-fail">' + t('contentEmpty') + '</p>';
+      } else {
+        body.innerHTML = '<p class="load-fail">' + t('contentFail') + '</p>';
+      }
     });
   }
 

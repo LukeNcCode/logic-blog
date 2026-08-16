@@ -10,6 +10,6 @@ window.__BLOG_SITE = {
   "socials": [
     { "id": "github", "name": "GitHub", "url": "https://github.com/LukeNcCode" },
     { "id": "email", "name": "Email", "url": "mailto:h1586130266@outlook.com" },
-    { "id": "bilibili", "name": "Bilibili", "url": "https://space.bilibili.com/559788094?spm_id_from=333.1007.0.0" }
+    { "id": "bilibili", "name": "Bilibili", "url": "https://space.bilibili.com/" }
   ]
 };
