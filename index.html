@@ -684,10 +684,10 @@
     if (contentCache[id] !== undefined) return contentCache[id];
     return readLocalContent()[id] || '';
   }
-  /* 懒加载正文：data/content/<id>.md 优先（fetch），回退旧 .js 格式与本地缓存 */
+  /* 懒加载正文：data/content/<id>.md 优先（fetch），404 不读缓存；网络失败回退旧 .js 与本地缓存 */
   function loadPostContent(id) {
     return fetch(CONTENT_DIR + encodeURIComponent(id) + '.md', { cache: 'no-store' }).then(function (res) {
-      if (!res.ok) throw new Error('http ' + res.status);
+      if (!res.ok) { var e = new Error('not found'); e.code = 'NOT_FOUND'; throw e; }  // 线上文件不存在
       return res.text();
     }).then(function (md) {
       contentCache[id] = md;
@@ -696,13 +696,15 @@
       writeLocalContent(all);
       return md;
     }).catch(function (e1) {
-      // 旧 .js 格式兼容（window.__BLOG_CONTENT 字典 / __BLOG_POST_ 旧格式）
+      // 线上 .md 不存在 → 直接失败，不读缓存（避免旧缓存掩盖真实状态）
+      if (e1 && e1.code === 'NOT_FOUND') throw e1;
+      // 网络错误 / file://：尝试旧 .js 格式，再回退本地缓存
       var dict = window.__BLOG_CONTENT || {};
       delete dict[id];
       delete window['__BLOG_POST_' + id];
       return loadScript(CONTENT_DIR + encodeURIComponent(id) + '.js').then(function () {
         var c = (window.__BLOG_CONTENT || {})[id] || window['__BLOG_POST_' + id];
-        if (!c || typeof c.content !== 'string') { var e = new Error('bad content'); e.code = 'BAD_CONTENT'; throw e; }
+        if (!c || typeof c.content !== 'string') { var e2 = new Error('bad content'); e2.code = 'BAD_CONTENT'; throw e2; }
         contentCache[id] = c.content;
         var all2 = readLocalContent();
         all2[id] = c.content;
