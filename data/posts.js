@@ -13,7 +13,7 @@ window.__BLOG_POSTS = [
     },
     {
         "id":  "test",
-        "status":  "published",
+        "status":  "draft",
         "date":  "2026-07-28",
         "tags":  [
                      "RTOS",
