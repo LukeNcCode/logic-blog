@@ -48,9 +48,10 @@
     background:rgba(255,255,255,.72);
     backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid transparent;
-    transition:border-color .3s ease, box-shadow .3s ease;
+    transition:border-color .3s ease, box-shadow .3s ease, transform .3s ease;
   }
   .topbar.scrolled { border-bottom-color:var(--line); box-shadow:0 4px 20px rgba(26,26,26,.06); }
+  .topbar.hidden { transform:translateY(-100%); }  /* 下滑隐藏、上滑显示 */
   .brand { font-weight:700; letter-spacing:-.01em; font-size:17px; }
   .brand span { color:var(--accent); }
   .nav { display:flex; gap:6px; }
@@ -126,6 +127,16 @@
   .page-head { margin-bottom:40px; }
   .page-head h2 { font-size:clamp(30px,4vw,44px); letter-spacing:-.02em; }
   .page-head p { color:var(--muted); margin-top:8px; }
+  /* 标签筛选栏 */
+  .tag-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px; }
+  .tag-pill {
+    border:1px solid var(--line); background:#fff; color:var(--muted);
+    padding:6px 15px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:inherit;
+    transition:border-color .18s ease, color .18s ease, background-color .18s ease, transform .18s ease;
+  }
+  .tag-pill:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+  .tag-pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:24px; }
   .card {
     position:relative; overflow:hidden;
@@ -149,6 +160,8 @@
     font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px;
     background:var(--accent-soft); color:var(--accent);
   }
+  button.tag { border:none; cursor:pointer; font-family:inherit; transition:filter .15s ease, transform .15s ease; }
+  button.tag:hover { filter:brightness(.94); transform:translateY(-1px); }
   .card h3 { font-size:20px; line-height:1.4; letter-spacing:-.01em; transition:color .2s ease; }
   .card:hover h3 { color:var(--accent); }
   .card-summary { color:var(--muted); font-size:14.5px; margin-top:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -471,6 +484,8 @@
     searchPlaceholder: { zh: '搜索文章…', en: 'Search posts…' },
     searchEmpty: { zh: '未找到相关文章', en: 'No matching posts' },
     searchTitle: { zh: '搜索', en: 'Search' },
+    allTag:      { zh: '全部', en: 'All' },
+    emptyTag:    { zh: '该标签下暂无文章', en: 'No posts with this tag' },
     footerDesc: { zh: '记录 C 语言、单片机、RTOS 与电路的学习日常，以及深夜 debug 后想明白的事。', en: 'Notes on C, MCUs, RTOS and circuits — and the things figured out after late-night debugging.' },
     footerNav: { zh: '导航', en: 'Navigate' },
     footerSocial: { zh: '联系', en: 'Contact' },
@@ -864,12 +879,19 @@
     update();
   }
 
-  /* ================= 动效：顶栏滚动状态 ================= */
+  /* ================= 动效：顶栏滚动状态 + 下滑隐藏 ================= */
   function bindTopbar() {
     var bar = document.getElementById('topbar');
     var ticking = false;
+    var lastY = 0;
     function update() {
-      bar.classList.toggle('scrolled', window.scrollY > 8);
+      var y = window.scrollY;
+      bar.classList.toggle('scrolled', y > 8);
+      // 顶部附近始终显示；下滑隐藏、上滑显示
+      if (y < 80) bar.classList.remove('hidden');
+      else if (y > lastY + 2) bar.classList.add('hidden');
+      else if (y < lastY - 2) bar.classList.remove('hidden');
+      lastY = y;
       ticking = false;
     }
     window.addEventListener('scroll', function () {
@@ -1034,10 +1056,22 @@
     bindReveals();
   }
 
-  /* ================= 视图：文章列表 ================= */
+  /* ================= 视图：文章列表（含标签筛选） ================= */
+  var articlesTag = 'all';
   function renderArticles() {
     var posts = loadPosts().filter(function (p) { return p.status === 'published'; });
-    var cards = posts.map(function (p, i) {
+    var tagSet = [];
+    posts.forEach(function (p) {
+      (p.tags || []).forEach(function (tg) { if (tagSet.indexOf(tg) < 0) tagSet.push(tg); });
+    });
+    var shown = posts.filter(function (p) {
+      return articlesTag === 'all' || (p.tags || []).indexOf(articlesTag) >= 0;
+    });
+    var pills = '<button type="button" class="tag-pill' + (articlesTag === 'all' ? ' active' : '') + '" data-tag="all">' + t('allTag') + '</button>' +
+      tagSet.map(function (tg) {
+        return '<button type="button" class="tag-pill' + (articlesTag === tg ? ' active' : '') + '" data-tag="' + esc(tg) + '">' + esc(tg) + '</button>';
+      }).join('');
+    var cards = shown.map(function (p, i) {
       return '<article class="card" data-reveal style="--reveal-delay:' + (i * 70) + 'ms" onclick="location.hash=\'#/article/' + encodeURIComponent(p.id) + '\'">' +
         '<div class="card-tags">' + p.tags.map(function (tag) { return '<span class="tag">' + esc(tag) + '</span>'; }).join('') + '</div>' +
         '<h3>' + esc(p.title) + '</h3>' +
@@ -1051,7 +1085,8 @@
         '<div class="page-head" data-reveal>' +
           '<h2>' + t('listTitle') + '</h2><p>' + tf('listDesc', posts.length) + '</p>' +
         '</div>' +
-        '<div class="grid">' + (cards || '<p class="empty">' + t('emptyPosts') + '</p>') + '</div>' +
+        '<div class="tag-bar" data-reveal>' + pills + '</div>' +
+        '<div class="grid">' + (cards || '<p class="empty">' + t('emptyTag') + '</p>') + '</div>' +
       '</div>';
     bindReveals();
   }
@@ -1071,7 +1106,7 @@
         '<h1>' + esc(post.title) + '</h1>' +
         '<div class="article-meta">' +
           '<span>' + post.date + '</span><span>' + tf('readTime', readLen(post.contentLen)) + '</span>' +
-          post.tags.map(function (tag) { return '<span class="tag">' + esc(tag) + '</span>'; }).join('') +
+          post.tags.map(function (tag) { return '<button type="button" class="tag" data-tag="' + esc(tag) + '" onclick="blogGoTag(this)">' + esc(tag) + '</button>'; }).join('') +
         '</div>' +
         '<div class="article-body"><p class="load-fail">' + t('contentLoading') + '</p></div>' +
       '</article>';
@@ -1091,7 +1126,13 @@
     });
   }
 
-  /* =================   /* ================= 视图：404 ================= */
+  /* =================   /* 详情页标签点击：跳转列表并按该标签筛选 */
+  window.blogGoTag = function (el) {
+    articlesTag = el.getAttribute('data-tag') || 'all';
+    location.hash = '#/articles';
+  };
+
+  /* ================= 视图：404 ================= */
   function renderNotFound() {
     document.getElementById('app').innerHTML =
       '<div class="page container nf">' +
@@ -1181,6 +1222,13 @@
   });
   document.addEventListener('click', function (e) {
     if (searchBox && !searchBox.contains(e.target)) closeSearch();
+  });
+  /* 标签筛选：列表页标签栏（事件委托，data-tag 安全读取） */
+  document.addEventListener('click', function (e) {
+    var pill = e.target.closest ? e.target.closest('.tag-pill') : null;
+    if (!pill) return;
+    articlesTag = pill.getAttribute('data-tag') || 'all';
+    renderArticles();
   });
   window.addEventListener('hashchange', closeSearch);
 
