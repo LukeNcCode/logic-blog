@@ -214,6 +214,40 @@
   .toast.ok { background:#1e7e4a; }
   .toast.err { background:#b3261e; }
 
+  /* ===== 搜索：图标右移 + 输入框滑出 ===== */
+  .search-box { position:relative; display:flex; align-items:center; gap:6px; margin-left:4px; }
+  .search-input {
+    width:0; opacity:0; padding:7px 2px;
+    border:none; border-bottom:1.5px solid var(--line);
+    background:transparent; font-size:14px; font-family:inherit; color:var(--ink);
+    outline:none;
+    transition:width .32s cubic-bezier(.2,.7,.3,1), opacity .25s ease, border-color .2s ease;
+  }
+  .search-box.open .search-input { width:190px; opacity:1; border-bottom-color:var(--accent); }
+  .search-toggle {
+    width:38px; height:36px; border:none; border-radius:10px; cursor:pointer;
+    background:transparent; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .32s cubic-bezier(.2,.7,.3,1), background-color .18s ease;
+  }
+  .search-toggle:hover { background:var(--bg-soft); }
+  .search-toggle svg { width:18px; height:18px; }
+  .search-results {
+    position:absolute; top:calc(100% + 10px); right:0; width:300px; max-height:320px; overflow-y:auto;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 16px 40px rgba(26,26,26,.14);
+    opacity:0; transform:translateY(-6px); pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease; z-index:300;
+  }
+  .search-results.show { opacity:1; transform:none; pointer-events:auto; }
+  .search-item { display:block; padding:11px 16px; border-bottom:1px solid var(--line); transition:background-color .15s ease; }
+  .search-item:last-child { border-bottom:none; }
+  .search-item:hover { background:var(--bg-soft); }
+  .si-title { display:block; font-size:14px; font-weight:600; }
+  .si-date { font-size:11.5px; color:var(--muted); }
+  .search-empty { padding:16px; font-size:13.5px; color:var(--muted); text-align:center; }
+  @media (max-width:640px) { .search-box.open .search-input { width:120px; } }
+
   /* ===== 语言切换按钮 + 点击波纹 ===== */
   .lang-toggle {
     width:44px; height:36px; border:none; border-radius:999px; cursor:pointer;
@@ -361,6 +395,13 @@
       <a href="#/" data-nav="home">首页</a>
       <a href="#/articles" data-nav="articles">文章</a>
     </div>
+    <div class="search-box" id="searchBox">
+      <input type="text" id="searchInput" class="search-input" placeholder="搜索文章…" autocomplete="off" spellcheck="false">
+      <button type="button" class="search-toggle" id="searchToggle" title="搜索" aria-label="搜索">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="search-results" id="searchResults"></div>
+    </div>
     <button type="button" class="ripple-btn lang-toggle" id="langToggle" title="切换为英文">EN</button>
   </div>
 </nav>
@@ -427,6 +468,9 @@
     copied:    { zh: '已复制', en: 'Copied' },
     tCopied:   { zh: '代码已复制到剪贴板', en: 'Code copied to clipboard' },
     backTop:   { zh: '返回顶部', en: 'Back to top' },
+    searchPlaceholder: { zh: '搜索文章…', en: 'Search posts…' },
+    searchEmpty: { zh: '未找到相关文章', en: 'No matching posts' },
+    searchTitle: { zh: '搜索', en: 'Search' },
     footerDesc: { zh: '记录 C 语言、单片机、RTOS 与电路的学习日常，以及深夜 debug 后想明白的事。', en: 'Notes on C, MCUs, RTOS and circuits — and the things figured out after late-night debugging.' },
     footerNav: { zh: '导航', en: 'Navigate' },
     footerSocial: { zh: '联系', en: 'Contact' },
@@ -447,6 +491,10 @@
     if (btn) { btn.textContent = t('langBtn'); btn.title = t('langTitle'); }
     var bt = document.getElementById('backTop');
     if (bt) bt.title = t('backTop');
+    var si = document.getElementById('searchInput');
+    if (si) si.placeholder = t('searchPlaceholder');
+    var st = document.getElementById('searchToggle');
+    if (st) st.title = t('searchTitle');
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
       el.innerHTML = t(el.getAttribute('data-i18n'));
     });
@@ -1084,6 +1132,57 @@
     btn.appendChild(ripple);
     setTimeout(function () { ripple.remove(); }, 600);
   });
+
+  /* ================= 搜索 ================= */
+  var searchBox = document.getElementById('searchBox');
+  var searchInput = document.getElementById('searchInput');
+  var searchToggle = document.getElementById('searchToggle');
+  var searchResults = document.getElementById('searchResults');
+  function hideSearchResults() {
+    searchResults.classList.remove('show');
+    searchResults.innerHTML = '';
+  }
+  function closeSearch() {
+    searchBox.classList.remove('open');
+    searchInput.value = '';
+    hideSearchResults();
+  }
+  function doSearch(q) {
+    q = (q || '').trim().toLowerCase();
+    if (!q) { hideSearchResults(); return; }
+    var hits = loadPosts().filter(function (p) {
+      return p.status === 'published' && (
+        (p.title || '').toLowerCase().indexOf(q) >= 0 ||
+        (p.summary || '').toLowerCase().indexOf(q) >= 0 ||
+        (p.tags || []).join(' ').toLowerCase().indexOf(q) >= 0
+      );
+    }).slice(0, 8);
+    var html = hits.length ? hits.map(function (p) {
+      return '<a class="search-item" href="#/article/' + encodeURIComponent(p.id) + '">' +
+        '<span class="si-title">' + esc(p.title) + '</span>' +
+        '<span class="si-date">' + p.date + '</span></a>';
+    }).join('') : '<div class="search-empty">' + t('searchEmpty') + '</div>';
+    searchResults.innerHTML = html;
+    searchResults.classList.add('show');
+  }
+  searchToggle.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (searchBox.classList.contains('open')) { closeSearch(); }
+    else { searchBox.classList.add('open'); searchInput.focus(); }
+  });
+  searchInput.addEventListener('input', function () { doSearch(searchInput.value); });
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSearch();
+    if (e.key === 'Enter') {
+      var first = searchResults.querySelector('.search-item');
+      if (first) { location.hash = first.getAttribute('href'); }
+      closeSearch();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (searchBox && !searchBox.contains(e.target)) closeSearch();
+  });
+  window.addEventListener('hashchange', closeSearch);
 
   /* ================= 路由 ================= */
   function route() {
