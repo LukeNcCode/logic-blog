@@ -1,7 +1,7 @@
 window.__BLOG_POSTS = [
     {
         "id":  "thinking",
-        "status":  "published",
+        "status":  "draft",
         "date":  "2026-08-17",
         "tags":  [
                      "C语言",
