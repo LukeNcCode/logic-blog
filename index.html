@@ -476,15 +476,25 @@
 
   /* ===== 移动端 ===== */
   @media (max-width:640px) {
-    .topbar { padding:12px 18px; }
+    .topbar { padding:12px 14px; gap:8px; }
     .container { padding:0 18px; }
-    .nav a { padding:6px 12px; font-size:13px; }
+    .nav a { padding:6px 10px; font-size:13px; }
+    .brand { font-size:15px; }
+    .topbar > div { gap:6px; }
+    .hero-content { padding-top:64px; }
+    .hero h1 { font-size:clamp(34px, 11vw, 46px); }
+    .recent-grid, .git-grid, .grid { grid-template-columns:1fr; gap:16px; }
+    .footer-inner { grid-template-columns:1fr; gap:24px; }
+    .footer-bottom { flex-direction:column; gap:6px; }
+    .search-results { width:min(78vw, 300px); }
+    .back-top { right:14px; bottom:20px; }
+    .below { padding:60px 0 70px; }
   }
 </style>
 </head>
 <body>
 <nav class="topbar" id="topbar">
-  <a href="#/" class="brand" id="brandText">从<span>寄存器</span>说起</a>
+  <a href="#/" class="brand" id="brandText">裸机<span>思维</span></a>
   <div style="display:flex;align-items:center;gap:12px">
     <div class="nav" id="nav">
       <a href="#/" data-nav="home">首页</a>
@@ -641,14 +651,7 @@
   var SITE_KEY = 'blog_site_v1';
   var SITE_URL = 'data/site.js';
   var siteCache = null;
-  var DEFAULT_SITE = {
-    version: 1,
-    socials: [
-      { id: 'github', name: 'GitHub', url: 'https://github.com/' },
-      { id: 'email',  name: 'Email',  url: 'mailto:hello@example.com' }
-    ]
-  };
-  function getSite() { return siteCache || DEFAULT_SITE; }
+  function getSite() { return siteCache || { github: '', socials: [] }; }
   function saveSite(site) { siteCache = site; try { localStorage.setItem(SITE_KEY, JSON.stringify(site)); } catch (e) {} }
   /* 初始化：优先加载线上 site.js，失败回退本地缓存/默认值 */
   function initSite() {
@@ -660,31 +663,11 @@
       return site;
     }).catch(function () {
       try { siteCache = JSON.parse(localStorage.getItem(SITE_KEY)); } catch (e) {}
-      if (!siteCache || !Array.isArray(siteCache.socials)) siteCache = DEFAULT_SITE;
+      if (!siteCache || typeof siteCache !== 'object') siteCache = { github: '', socials: [] };
       return siteCache;
     });
   }
 
-  var SEED = [
-    {
-      id: 'register-year', status: 'published', date: '2026-08-10', tags: ['C语言', '感悟'],
-      title: '我在寄存器里找到的确定性',
-      summary: '从 GPIO 点灯到直接操作寄存器：迷茫、烧板子，然后真的开始懂硬件。',
-      content: '最初拿到开发板那天，点亮第一个 LED 用了整整一个下午。现在回头看，那一下午其实什么都没学会——我只是在抄示例代码。\n\n直到某天我翻开数据手册，看到那一串寄存器地址。GPIOA->BSRR 写 1 置位、写 0 清零，那一刻我突然意识到：所谓"控制硬件"，本质就是往内存里的特定地址写数。\n\n看完寄存器后我写的第一段正经代码长这样：\n\n```c\n#include "stm32f1xx.h"\n\nvoid led_init(void) {\n    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;  // 使能 GPIOC 时钟\n    GPIOC->CRH &= ~GPIO_CRH_CNF13;       // PC13 配置为推挽输出\n    GPIOC->CRH |= GPIO_CRH_MODE13_1;\n}\n\nint main(void) {\n    led_init();\n    while (1) {\n        GPIOC->ODR ^= GPIO_ODR_ODR13;    // 翻转 LED\n        for (volatile int i = 0; i < 500000; i++);  // 简单延时\n    }\n}\n```\n\n从那以后我不再满足于 HAL 库封装好的函数。每学一个外设，我就去手册里找它对应的寄存器，自己写一遍初始化。速度慢了很多，但每一次都扎实。\n\n这一年烧过三块板子，调过无数个深夜的 bug，但当我第一次不用参考代码、纯靠寄存器配置让 PWM 输出呼吸灯时，那种确定性是无可替代的。'
-    },
-    {
-      id: 'baremetal-to-rtos', status: 'published', date: '2026-07-28', tags: ['RTOS', 'FreeRTOS'],
-      title: '从点灯到 RTOS：裸机开发的最后一课',
-      summary: '裸机裸久了，会开始怀疑 while(1) 里轮询的意义。这篇记录我第一次用 FreeRTOS 跑起两个任务时的顿悟。',
-      content: '裸机开发的世界很单纯：main 函数里一个 while(1)，轮询所有事情。但当你同时要处理按键、串口、传感器和显示屏时，轮询开始变得力不从心。\n\n我第一次接触 FreeRTOS 是在朋友的推荐下。创建两个任务，一个点灯，一个读按键，各自独立循环。跑起来的那一刻，我盯着示波器看了很久——两个"程序"在同一个芯片上并行运行。\n\n当然，自由是要付出代价的。任务调度、临界区、信号量，每个概念背后都是一堆坑。我因为在中断里调用 printf 导致系统崩溃，排查了一整晚。\n\n但跨过这些坑之后，我对"实时性"有了真正的体感：优先级不是选择题，而是资源分配的问题。这大概就是嵌入式里最接近哲学的东西。'
-    },
-    {
-      id: 'interrupt-philosophy', status: 'draft', date: '2026-07-02', tags: ['中断', '单片机'],
-      title: '中断优先级，也是一门人生哲学',
-      summary: '草稿：当我在 NVIC 里配置抢占优先级时，突然觉得它和人生很像——高优先级的事先做，低优先级的等一等，但总有事情会被无限推迟。',
-      content: '还在写。配置 NVIC 的时候想到的：中断有抢占优先级和子优先级，人生也是。\n\n你永远无法让所有事情同时完成，只能给它们排优先级。\n\n（本篇文章尚未完成，先存草稿。）'
-    }
-  ];
 
   /* 正文缓存：localStorage 读写 */
   function readLocalContent() {
@@ -721,26 +704,12 @@
       var raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         var data = JSON.parse(raw);
-        if (Array.isArray(data)) data = { version: 1, posts: data };  // v1 纯数组 → 迁移
-        if (data.version < SEED_VERSION) {
-          // 升级：覆盖种子文章（id 在 SEED 中），保留用户自建文章
-          var seedIds = {};
-          SEED.forEach(function (s) { seedIds[s.id] = true; });
-          var fresh = SEED.slice();
-          data.posts.forEach(function (p) {
-            if (!seedIds[p.id]) fresh.push(p);
-          });
-          data = { version: SEED_VERSION, posts: fresh };
-          try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
-        }
-        return stripContents(data.posts);
+        if (Array.isArray(data)) data = { version: 1, posts: data };  // v1 纯数组兼容
+        return stripContents(data.posts || []);
       }
     } catch (e) { /* 忽略损坏数据 */ }
-    var init = { version: SEED_VERSION, posts: SEED.slice() };
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(init)); } catch (e) { /* 隐私模式忽略 */ }
-    return stripContents(init.posts);
-  }
-  function writeLocal(posts) {
+    return [];
+  }  function writeLocal(posts) {
     var metas = stripContents(posts);
     try { localStorage.setItem(STORE_KEY, JSON.stringify({ version: SEED_VERSION, posts: metas })); } catch (e) { /* ignore */ }
   }
