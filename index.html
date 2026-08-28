@@ -448,6 +448,44 @@
     display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
   }
 
+  /* ===== 公告弹窗 ===== */
+  .announce-overlay {
+    position:fixed; inset:0; z-index:500;
+    background:var(--overlay);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .announce-overlay.show { opacity:1; pointer-events:auto; }
+  .announce-box {
+    background:var(--modal-bg); color:var(--ink);
+    border:1px solid var(--line); border-radius:14px;
+    max-width:460px; width:100%; max-height:82vh; overflow-y:auto;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);
+    transform:translateY(14px) scale(.98);
+    transition:transform .3s cubic-bezier(.2,.7,.3,1);
+  }
+  .announce-overlay.show .announce-box { transform:none; }
+  .announce-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+  }
+  .announce-head h3 { font-size:16px; font-weight:700; }
+  .announce-date { font-size:12px; color:var(--muted); margin-left:10px; }
+  .announce-close {
+    width:30px; height:30px; border:none; border-radius:8px; cursor:pointer;
+    background:transparent; color:var(--muted); font-size:18px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    transition:background-color .15s ease, color .15s ease;
+  }
+  .announce-close:hover { background:var(--bg-soft); color:var(--ink); }
+  .announce-body { padding:18px 20px 20px; font-size:14.5px; line-height:1.8; color:var(--ink); white-space:pre-line; }
+  .announce-foot { padding:0 20px 18px; }
+  .announce-check {
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); cursor:pointer;
+  }
+  .announce-check input { accent-color:var(--accent); cursor:pointer; }
+
   /* ===== 404 页 ===== */
   .nf { text-align:center; padding:140px 0 120px; }
   .nf-code {
@@ -598,6 +636,7 @@
     gitSub:      { zh: 'GitHub 上的一些项目', en: 'Some projects on GitHub' },
     gitLoadFail: { zh: 'GitHub 项目加载失败，稍后刷新重试', en: 'Failed to load GitHub projects — refresh later' },
     gitEmpty:    { zh: '暂无公开项目', en: 'No public projects yet' },
+    announceToday: { zh: '今天不再提示', en: 'Don\'t show again today' },
     footerDesc: { zh: '关于技术、生活与思考的杂谈——踩过的坑、想明白的事，以及偶尔冒出的怪念头。', en: 'Random essays on tech, life and thinking.' },
     footerNav: { zh: '导航', en: 'Navigate' },
     footerSocial: { zh: '联系', en: 'Contact' },
@@ -1433,6 +1472,55 @@
     applyTheme(next);
   });
 
+  /* ================= 公告弹窗 ================= */
+  var ANNOUNCE_KEY = 'blog_announce_seen';
+  var announceShown = false;
+  function shouldShowAnnounce() {
+    try {
+      var d = JSON.parse(localStorage.getItem(ANNOUNCE_KEY) || 'null');
+      if (d && d.date && new Date().toDateString() === d.date) return false;  // 今日已看过
+    } catch (e) {}
+    return true;
+  }
+  function buildAnnounce() {
+    var cfg = window.__BLOG_ANNOUNCEMENT;
+    if (!cfg || !cfg.enabled || announceShown) return;
+    var en = curLang === 'en';
+    var dateStr = cfg.date || '';
+    var dateHtml = dateStr ? '<span class="announce-date">' + esc(dateStr) + '</span>' : '';
+    var title = en ? (cfg.titleEn || cfg.title) : cfg.title;
+    var content = en ? (cfg.contentEn || cfg.content) : cfg.content;
+    var overlay = document.createElement('div');
+    overlay.className = 'announce-overlay';
+    overlay.innerHTML =
+      '<div class="announce-box" role="dialog" aria-modal="true">' +
+        '<div class="announce-head"><h3>' + esc(title) + dateHtml + '</h3>' +
+          '<button type="button" class="announce-close" aria-label="close">✕</button></div>' +
+        '<div class="announce-body">' + esc(content) + '</div>' +
+        '<div class="announce-foot">' +
+          '<label class="announce-check"><input type="checkbox" id="announceNoMore">' + t('announceToday') + '</label>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    announceShown = true;
+    function close(remember) {
+      overlay.classList.remove('show');
+      if (remember) {
+        try { localStorage.setItem(ANNOUNCE_KEY, JSON.stringify({ date: new Date().toDateString() })); } catch (e) {}
+      }
+      setTimeout(function () { overlay.remove(); }, 250);
+    }
+    overlay.querySelector('.announce-close').addEventListener('click', function () { close(overlay.querySelector('#announceNoMore').checked); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
+    requestAnimationFrame(function () { overlay.classList.add('show'); });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var o = document.querySelector('.announce-overlay.show');
+      if (o) o.querySelector('.announce-close').click();
+    }
+  });
+
   /* ================= 路由 ================= */
   function route() {
     var hash = location.hash || '#/';
@@ -1460,6 +1548,10 @@
   Promise.all([initData(), initSite()]).then(function () {
     renderFooterSocials();
     route();
+    // 加载公告配置并弹窗（需先加载 announcement.js，非 file:// 也能加载——file:// 下 script 可行）
+    loadScript('data/announcement.js').then(function () {
+      if (shouldShowAnnounce()) buildAnnounce();
+    }).catch(function () { /* 无公告文件则不弹 */ });
   });   // 数据与站点配置就绪后再渲染
 })();
 </script>
