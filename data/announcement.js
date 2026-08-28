@@ -6,7 +6,7 @@
    - rememberDay: 关闭后当天不再提示的天数（0 = 每次进站都弹）
    ============================================================ */
 window.__BLOG_ANNOUNCEMENT = {
-  enabled: true,
+  enabled: false,
   title: "站点公告",
   titleEn: "Announcement",
   date: "2026-09-01",
