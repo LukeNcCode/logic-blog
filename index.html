@@ -856,6 +856,8 @@
   /* 正文渲染：轻量 Markdown → HTML（标题/列表/引用/代码块/图片/段落） */
   function renderContent(content) {
     var md = String(content).replace(/\r\n/g, '\n');
+    // 剥离元数据：HTML 注释块与 YAML front-matter（元数据统一由 data/posts.js 管理）
+    md = md.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*---\s*\n[\s\S]*?\n---\s*\n/, '');
     var lines = md.split('\n');
     var html = '';
     var list = null;

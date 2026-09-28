@@ -1,22 +1,12 @@
-<!-- ---
-title: 《VSCode + CMake + JLink：STM32 编译、烧录与调试一站式配置指南》
-date: 2026-09-28
-tags: [VSCode, STM32]
-categories: [STM32开发]
-description: 告别 Keil：用 VSCode + CMake + JLink 搭建 STM32 现代开发环境
-cover: /images/cover.jpg      # 可选封面图
-author: LukeBryan
---- -->
-
 # 《VSCode + CMake + JLink：STM32 编译、烧录与调试一站式配置指南》
 
 通过本文，你将快速完成 VSCode 中 STM32 开发环境的搭建与配置。
 
 ### 第一步：安装[cmake](https://cmake.org/download/),[git](https://git-scm.com/),[ninja](https://github.com/ninja-build/ninja/releases/v1.13.1),[gnu-toolchains-for-arm](https://gitlab.arm.com/tooling/gnu-toolchains-for-arm)，并设置ninja,arm交叉编译链的环境变量。
-![示意图](/images/vscode-cmake-stm32/1.png)
+![示意图](images/vscode-cmake-stm32/1.png)
 
 ### 第二步：下载[本项目](https://github.com/LukeNcCode/vscode-cmake-stm32/archive/refs/heads/main.zip)并解压，将.vscode文件夹放置在STM32工程根目录下。
-![示意图](/images/vscode-cmake-stm32/2.png)
+![示意图](images/vscode-cmake-stm32/2.png)
 
 ### 第三步：参考本项目中的README.md文件，依次修改文件中的对应参数。(elf文件名一般与STM32工程名字相同)
 
@@ -103,13 +93,13 @@ exit
 ```
 
 ### 第四步：在vscode配置中加载本项目中的STM32.code-profile。
-![示意图](/images/vscode-cmake-stm32/3.png)
-![示意图](/images/vscode-cmake-stm32/4.png)
+![示意图](images/vscode-cmake-stm32/3.png)
+![示意图](images/vscode-cmake-stm32/4.png)
 
 ### 第五步：确保一切无误，重启Vscode并打开对应工程项目文件夹。左下角会出现 Build | Flash 按钮。
-![示意图](/images/vscode-cmake-stm32/5.png)
+![示意图](images/vscode-cmake-stm32/5.png)
 
 ### 第六步：用jlink连接好板子插入电脑进行测试，Build | Flash | Debug 下均无报错证明开发环境一切正常。
-![示意图](/images/vscode-cmake-stm32/6.png)
-![示意图](/images/vscode-cmake-stm32/7.png)
-![示意图](/images/vscode-cmake-stm32/8.png)
+![示意图](images/vscode-cmake-stm32/6.png)
+![示意图](images/vscode-cmake-stm32/7.png)
+![示意图](images/vscode-cmake-stm32/8.png)
