@@ -1,14 +1,14 @@
 window.__BLOG_POSTS = [
     {
-        "id":  "thinking",
-        "status":  "draft",
-        "date":  "2026-08-17",
+        "id":  "vscode-cmake-stm32",
+        "status":  "published",
+        "date":  "2026-09-28",
         "tags":  [
-                     "C语言",
-                     "感悟"
+                     "VSCode",
+                     "STM32"
                  ],
-        "title":  "随笔",
-        "summary":  "距离考研还有488天",
-        "contentLen":  691
+        "title":  "《VSCode + CMake + JLink：STM32 编译、烧录与调试一站式配置指南》",
+        "summary":  "STM32开发",
+        "contentLen":  2561
     }
 ];
