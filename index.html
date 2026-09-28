@@ -19,9 +19,7 @@
   @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Medium.otf") format("opentype"); font-weight:500; font-style:normal; font-display:swap; }
   @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Semibold.otf") format("opentype"); font-weight:600; font-style:normal; font-display:swap; }
   @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Bold.otf") format("opentype"); font-weight:700; font-style:normal; font-display:swap; }
-  /* ===== JetBrains Mono 本地等宽字体（圆润现代，代码专用）===== */
-  @font-face { font-family:"JetBrains Mono"; src:url("fonts/JetBrainsMono-Regular.woff2") format("woff2"); font-weight:400; font-style:normal; font-display:swap; }
-  @font-face { font-family:"JetBrains Mono"; src:url("fonts/JetBrainsMono-SemiBold.woff2") format("woff2"); font-weight:600; font-style:normal; font-display:swap; }
+  /* 代码字体已移至外部样式表 assets/blog.css（base64 内嵌，file:// 下同样可加载） */
   /* ===== 主题与基础 ===== */
   :root {
     --bg:#ffffff; --bg-soft:#f7f8fa; --ink:#1a1a1a; --muted:#5c5c5c;
@@ -53,6 +51,7 @@
   html { scroll-behavior:smooth; }
   body {
     background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
     /* 西文走本地 SF Pro Text；中文走本地 Noto Sans SC（思源黑体，苹方风开源替代），不依赖系统字体 */
     font-family:"SF Pro Text", "Noto Sans SC", -apple-system, BlinkMacSystemFont,
       "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
@@ -385,7 +384,7 @@
     position:relative;
     background:var(--code-bg); color:var(--code-text);
     border-radius:12px; padding:20px 20px 18px;
-    overflow-x:auto; font-size:13.5px; line-height:1.7;
+    overflow-x:auto; font-size:14.5px; line-height:1.75; text-rendering:optimizeLegibility;
     /* 圆润等宽：JetBrains Mono 本地优先，Cascadia/Fira 次之，Consolas 兜底 */
     font-family:"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Menlo, Consolas, "Noto Sans SC", "Microsoft YaHei", monospace;
     font-variant-ligatures:contextual;
@@ -535,6 +534,7 @@
     .below { padding:60px 0 70px; }
   }
 </style>
+<link rel="stylesheet" href="assets/blog.css">
 </head>
 <body>
 <nav class="topbar" id="topbar">
