@@ -1579,6 +1579,84 @@
     }
   });
 
+  /* ================= 图片点击放大预览 ================= */
+  var lbImages = [];
+  var lbIndex = 0;
+  var lbEl = null;
+  function collectImages() {
+    lbImages = Array.prototype.slice.call(document.querySelectorAll('.article-body img'));
+  }
+  function buildLightbox() {
+    if (lbEl) return lbEl;
+    var el = document.createElement('div');
+    el.className = 'lightbox';
+    el.innerHTML =
+      '<button type="button" class="lightbox-close" aria-label="close">✕</button>' +
+      '<button type="button" class="lightbox-nav prev" aria-label="prev">‹</button>' +
+      '<img alt="">' +
+      '<button type="button" class="lightbox-nav next" aria-label="next">›</button>' +
+      '<div class="lightbox-count"></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t === el || t.classList.contains('lightbox-close') || t.classList.contains('lightbox-img-zoom')) closeLightbox();
+      else if (t.classList.contains('prev')) stepImage(-1);
+      else if (t.classList.contains('next')) stepImage(1);
+    });
+    lbEl = el;
+    return el;
+  }
+  function renderLightbox() {
+    var img = lbEl.querySelector('img');
+    var src = lbImages[lbIndex];
+    if (!src) return;
+    img.src = src.getAttribute('src');
+    img.alt = src.getAttribute('alt') || '';
+    var multi = lbImages.length > 1;
+    lbEl.querySelector('.prev').hidden = !multi;
+    lbEl.querySelector('.next').hidden = !multi;
+    lbEl.querySelector('.lightbox-count').textContent = multi ? (lbIndex + 1) + ' / ' + lbImages.length : '';
+  }
+  function openLightbox(target) {
+    collectImages();
+    var i = lbImages.indexOf(target);
+    if (i < 0) return;
+    lbIndex = i;
+    buildLightbox();
+    renderLightbox();
+    document.body.classList.add('lightbox-open');
+    requestAnimationFrame(function () { lbEl.classList.add('show'); });
+  }
+  function closeLightbox() {
+    if (!lbEl) return;
+    lbEl.classList.remove('show');
+    document.body.classList.remove('lightbox-open');
+    setTimeout(function () {
+      if (lbEl && !lbEl.classList.contains('show')) lbEl.querySelector('img').removeAttribute('src');
+    }, 250);
+  }
+  function stepImage(dir) {
+    if (!lbImages.length) return;
+    lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
+    renderLightbox();
+  }
+  /* 事件委托：正文图片点击放大 */
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.closest && t.closest('.article-body')) {
+      openLightbox(t);
+    }
+  });
+  /* 键盘：ESC 关闭，左右切换 */
+  document.addEventListener('keydown', function (e) {
+    if (!lbEl || !lbEl.classList.contains('show')) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') stepImage(-1);
+    else if (e.key === 'ArrowRight') stepImage(1);
+  });
+  /* 路由切换时关闭预览 */
+  window.addEventListener('hashchange', function () { if (lbEl && lbEl.classList.contains('show')) closeLightbox(); });
+
   /* ================= 路由 ================= */
   function route() {
     var hash = location.hash || '#/';
