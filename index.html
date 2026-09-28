@@ -221,11 +221,11 @@
   @keyframes underline-grow { to { width:96px; } }
   @keyframes article-in { from { opacity:0; transform:translateY(14px); filter:blur(5px); } }
   .article-meta { display:flex; flex-wrap:wrap; gap:14px; align-items:center; color:#9a9a9a; font-size:13.5px; margin-bottom:34px; animation:article-in .7s ease-out .12s backwards; }
-  .article-body p, .article-body .code-block, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol {
+  .article-body p, .article-body .code-wrap, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol {
     opacity:0; transform:translateY(14px);
     transition:opacity .6s ease, transform .6s ease, background-color .6s ease, box-shadow .6s ease;
   }
-  .article-body p.in, .article-body .code-block.in, .article-body > img.in, .article-body h1.in, .article-body h2.in, .article-body h3.in, .article-body h4.in, .article-body blockquote.in, .article-body ul.in, .article-body ol.in { opacity:1; transform:none; }
+  .article-body p.in, .article-body .code-wrap.in, .article-body > img.in, .article-body h1.in, .article-body h2.in, .article-body h3.in, .article-body h4.in, .article-body blockquote.in, .article-body ul.in, .article-body ol.in { opacity:1; transform:none; }
   /* 阅读中高亮：段落进入视口短暂亮起 */
   .article-body p.reading {
     background:var(--accent-soft);
@@ -391,16 +391,11 @@
     margin:24px 0;
     tab-size:4;
   }
-  .code-block::before {
-    content:attr(data-lang); position:absolute; bottom:10px; right:16px;
-    font-size:10.5px; color:#64748b; text-transform:uppercase;
-    letter-spacing:.1em; font-family:"SF Pro Text", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  }
+  /* 语言角标与复制按钮改由 .code-wrap 定位（固定在框角，不随横向滚动） */
   /* 代码块 hover 发光 + 复制按钮 */
   .code-block { transition:box-shadow .25s ease, transform .25s ease; }
   .code-block:hover { box-shadow:0 12px 32px rgba(15,23,42,.28); transform:translateY(-2px); }
   .copy-btn {
-    position:absolute; top:10px; right:14px;
     font-size:11px; font-weight:600; color:#94a3b8;
     background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
     border-radius:6px; padding:4px 10px; cursor:pointer;
@@ -511,9 +506,9 @@
   @media print {
     .topbar, .back-top, .progress-bar, .toast-wrap, .copy-btn, .hero-scroll-hint, .footer { display:none !important; }
     .article { padding-top:20px; }
-    .article-body p, .article-body .code-block { opacity:1 !important; transform:none !important; }
+    .article-body p, .article-body .code-wrap { opacity:1 !important; transform:none !important; }
     .code-block { background:#f5f5f5 !important; color:#111 !important; box-shadow:none !important; }
-    .code-block::before { color:#888; }
+    .code-wrap::before { color:#888; }
     body { background:#fff; }
   }
 
@@ -533,8 +528,77 @@
     .back-top { right:14px; bottom:20px; }
     .below { padding:60px 0 70px; }
   }
+
+  /* ===== 内联自定义样式（与 assets/blog.css 同步，确保生效）===== */
+/* 代码块 / 行内代码字体（系统等宽兜底，保证任何环境都清晰） */
+.code-block, .code-block code, .inline-code {
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", "PingFang SC", "Noto Sans SC", monospace;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+/* ===== 代码块外框（复制按钮与语言角标固定在框角，不随横向滚动移动）===== */
+.code-wrap { position: relative; margin: 24px 0; }
+.code-wrap > .code-block { margin: 0; }
+.code-wrap::before {
+  content: attr(data-lang);
+  position: absolute; bottom: 10px; right: 16px; z-index: 2;
+  font-size: 10.5px; color: #64748b; text-transform: uppercase;
+  letter-spacing: .1em; pointer-events: none;
+  font-family: "SF Pro Text", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+.code-wrap > .copy-btn { position: absolute; top: 10px; right: 14px; z-index: 2; }
+
+/* ===== 文章页宽度（可自行调整此数值）===== */
+.article { max-width: 940px; }
+/* ===== 图片点击放大预览（lightbox）===== */
+.article-body img { cursor: zoom-in; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(8, 10, 14, .92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 24px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+.lightbox.show { opacity: 1; pointer-events: auto; }
+.lightbox img {
+  max-width: 100%; max-height: 100%;
+  border-radius: 8px; box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  transform: scale(.94); transition: transform .3s cubic-bezier(.2,.7,.3,1);
+  cursor: zoom-out;
+}
+.lightbox.show img { transform: none; }
+.lightbox-close {
+  position: absolute; top: 18px; right: 20px;
+  width: 40px; height: 40px; border: none; border-radius: 50%; cursor: pointer;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .18s ease, transform .18s ease;
+}
+.lightbox-close:hover { background: rgba(255,255,255,.24); transform: scale(1.06); }
+.lightbox-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 46px; height: 46px; border: none; border-radius: 50%; cursor: pointer;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .18s ease, opacity .18s ease;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,.26); }
+.lightbox-nav.prev { left: 18px; }
+.lightbox-nav.next { right: 18px; }
+.lightbox-nav[hidden] { display: none; }
+.lightbox-count {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,.75); font-size: 13px; letter-spacing: .04em;
+}
+body.lightbox-open { overflow: hidden; }
+@media (max-width: 640px) {
+  .lightbox { padding: 24px 12px; }
+  .lightbox-nav { width: 40px; height: 40px; font-size: 18px; }
+  .lightbox-nav.prev { left: 8px; }
+  .lightbox-nav.next { right: 8px; }
+}
 </style>
-<link rel="stylesheet" href="assets/blog.css">
 </head>
 <body>
 <nav class="topbar" id="topbar">
@@ -871,7 +935,7 @@
     o.renderer.rules.fence = function (tokens, idx) {
       var tk = tokens[idx];
       var lang = (tk.info || '').trim().split(/\s+/)[0] || '';
-      return '<pre class="code-block" data-lang="' + esc(lang) + '"><code>' + highlightC(tk.content) + '</code></pre>';
+      return '<div class="code-wrap" data-lang="' + esc(lang) + '"><pre class="code-block"><code>' + highlightC(tk.content) + '</code></pre></div>';
     };
     // 行内代码：加样式类
     o.renderer.rules.code_inline = function (tokens, idx) {
@@ -930,7 +994,7 @@
         var code = [];
         i++;  // 移到代码首行
         while (i < lines.length && !/^(```|~~~)\s*$/.test(lines[i].trim())) { code.push(lines[i]); i++; }
-        html += '<pre class="code-block" data-lang="' + esc(lang) + '"><code>' + highlightC(code.join('\n')) + '</code></pre>';
+        html += '<div class="code-wrap" data-lang="' + esc(lang) + '"><pre class="code-block"><code>' + highlightC(code.join('\n')) + '</code></pre></div>';
         continue;  // for 的 i++ 自然跳过闭合围栏行
       }
       // 标题
@@ -1011,7 +1075,7 @@
   }
   /* 详情页段落与代码块逐个渐入 + 阅读中高亮 */
   function bindParagraphs() {
-    var ps = document.querySelectorAll('.article-body p, .article-body .code-block, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol');
+    var ps = document.querySelectorAll('.article-body p, .article-body .code-wrap, .article-body > img, .article-body h1, .article-body h2, .article-body h3, .article-body h4, .article-body blockquote, .article-body ul, .article-body ol');
     if (!ps.length) return;
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
@@ -1069,10 +1133,12 @@
   }
   /* 代码块复制按钮：右上角，点击复制 + 反馈 */
   function mountCopyButtons() {
-    var blocks = document.querySelectorAll('.code-block');
-    if (!blocks.length) return;
-    Array.prototype.forEach.call(blocks, function (pre) {
-      if (pre.querySelector('.copy-btn')) return;
+    var wraps = document.querySelectorAll('.code-wrap');
+    if (!wraps.length) return;
+    Array.prototype.forEach.call(wraps, function (wrap) {
+      if (wrap.querySelector('.copy-btn')) return;
+      var pre = wrap.querySelector('.code-block');
+      if (!pre) return;
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'copy-btn';
@@ -1085,7 +1151,7 @@
           setTimeout(function () { btn.textContent = t('copyCode'); }, 1600);
         });
       });
-      pre.appendChild(btn);
+      wrap.appendChild(btn);
     });
   }
 
