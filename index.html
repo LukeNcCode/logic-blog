@@ -234,15 +234,12 @@
     border-radius:6px;
   }
   .article-body p { margin-bottom:20px; color:var(--ink); font-size:16px; line-height:1.9; }
-  /* 文章图片 */
-  .article-body > img {
+  /* 文章图片（markdown-it 与内置解析统一按块级大图展示） */
+  .article-body > img,
+  .article-body p img {
     display:block; max-width:100%; height:auto;
     border-radius:10px; margin:24px auto;
     box-shadow:0 8px 24px rgba(26,26,26,.10);
-  }
-  .article-body p img {
-    display:inline-block; vertical-align:middle; max-height:320px;
-    margin:0 4px; border-radius:6px; box-shadow:none;
   }
   /* Markdown 元素 */
   .article-body h1 { font-size:24px; margin:34px 0 12px; }
@@ -263,6 +260,15 @@
   }
   .article-body a { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
   .article-body a:hover { opacity:.8; }
+  /* 表格（markdown-it） */
+  .article-body table { width:100%; border-collapse:collapse; margin:0 0 22px; font-size:14.5px; }
+  .article-body th, .article-body td { border:1px solid var(--line); padding:9px 13px; text-align:left; }
+  .article-body th { background:var(--bg-soft); font-weight:700; }
+  .article-body tbody tr:nth-child(even) td { background:var(--bg-soft); }
+  .article-body hr { border:none; border-top:1px solid var(--line); margin:30px 0; }
+  .article-body del, .article-body s { color:var(--muted); }
+  .article-body blockquote p { margin:0 0 8px; }
+  .article-body blockquote p:last-child { margin-bottom:0; }
 
   /* ===== Toast ===== */
   .toast-wrap { position:fixed; top:20px; right:20px; z-index:300; display:flex; flex-direction:column; gap:10px; }
@@ -581,6 +587,7 @@
 </footer>
 <div class="toast-wrap" id="toastWrap"></div>
 
+<script src="vendor/markdown-it.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -854,9 +861,58 @@
       .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
   /* 正文渲染：轻量 Markdown → HTML（标题/列表/引用/代码块/图片/段落） */
+  /* markdown-it 实例（html 关闭防 XSS；自定义代码高亮 / 图片懒加载 / 链接新窗口） */
+  var mdParser = null;
+  function getMdParser() {
+    if (mdParser !== null) return mdParser;
+    if (typeof window.markdownit !== 'function') { mdParser = false; return false; }
+    var o = window.markdownit({ html: false, linkify: true, breaks: false, typographer: false });
+    // 代码块：自定义高亮 + 结构（copy 按钮由 mountCopyButtons 后置添加）
+    o.renderer.rules.fence = function (tokens, idx) {
+      var tk = tokens[idx];
+      var lang = (tk.info || '').trim().split(/\s+/)[0] || '';
+      return '<pre class="code-block" data-lang="' + esc(lang) + '"><code>' + highlightC(tk.content) + '</code></pre>';
+    };
+    // 行内代码：加样式类
+    o.renderer.rules.code_inline = function (tokens, idx) {
+      return '<code class="inline-code">' + esc(tokens[idx].content) + '</code>';
+    };
+    // 图片：懒加载
+    var imgRule = o.renderer.rules.image;
+    o.renderer.rules.image = function (tokens, idx, options, env, self) {
+      tokens[idx].attrSet('loading', 'lazy');
+      return imgRule(tokens, idx, options, env, self);
+    };
+    // 链接：新窗口打开
+    var linkRule = o.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+    o.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+      tokens[idx].attrSet('target', '_blank');
+      tokens[idx].attrSet('rel', 'noopener');
+      return linkRule(tokens, idx, options, env, self);
+    };
+    mdParser = o;
+    return mdParser;
+  }
+  /* 剥离元数据：HTML 注释块与 YAML front-matter（元数据统一由 data/posts.js 管理） */
+  function stripMeta(s) {
+    return String(s).replace(/\r\n/g, '\n')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/^\s*---\s*\n[\s\S]*?\n---\s*\n/, '');
+  }
+  /* 正文渲染：优先 markdown-it（完整 Markdown 支持），异常/不可用时回退内置轻量解析 */
   function renderContent(content) {
+    var src = stripMeta(content);
+    var p = getMdParser();
+    if (p) {
+      try { return p.render(src); } catch (e) { /* 回退 */ }
+    }
+    return renderFallback(src);
+  }
+  /* 内置轻量 Markdown 解析（markdown-it 不可用时的兜底） */
+  function renderFallback(content) {
     var md = String(content).replace(/\r\n/g, '\n');
-    // 剥离元数据：HTML 注释块与 YAML front-matter（元数据统一由 data/posts.js 管理）
     md = md.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*---\s*\n[\s\S]*?\n---\s*\n/, '');
     var lines = md.split('\n');
     var html = '';

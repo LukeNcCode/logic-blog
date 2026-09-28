@@ -1,3 +1,5 @@
+# 《VSCode + CMake + JLink：STM32 编译、烧录与调试一站式配置指南》
+
 通过本文，你将快速完成 VSCode 中 STM32 开发环境的搭建与配置。
 
 ### 第一步：安装[cmake](https://cmake.org/download/),[git](https://git-scm.com/),[ninja](https://github.com/ninja-build/ninja/releases/v1.13.1),[gnu-toolchains-for-arm](https://gitlab.arm.com/tooling/gnu-toolchains-for-arm)，并设置ninja,arm交叉编译链的环境变量。
