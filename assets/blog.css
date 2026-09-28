@@ -20,3 +20,5 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
+/* ===== 文章页宽度（可自行调整此数值）===== */
+.article { max-width: 940px; }
