@@ -1,0 +1,63 @@
+/* ============================================================
+   Inter 字体（本地托管，Inter 4.1）
+   - 西文/数字：Inter（正文、UI）
+   - 西文标题：InterDisplay（大字号显示用光学尺寸）
+   - 中文：由各处的 "Noto Sans SC" 回退承接（Inter 不含 CJK）
+   字体文件位于 ../webfonts/，仅保留本站实际用到的 400/500/600/700 四档，
+   避免多余字重拖慢 GitHub Pages 首屏。许可证见 webfonts/Inter-LICENSE.txt。
+   ============================================================ */
+
+/* ===== 正文 / UI：Inter ===== */
+@font-face {
+  font-family: "Inter";
+  src: url("../webfonts/Inter-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../webfonts/Inter-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../webfonts/Inter-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../webfonts/Inter-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* ===== 标题：InterDisplay ===== */
+@font-face {
+  font-family: "InterDisplay";
+  src: url("../webfonts/InterDisplay-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "InterDisplay";
+  src: url("../webfonts/InterDisplay-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "InterDisplay";
+  src: url("../webfonts/InterDisplay-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "InterDisplay";
+  src: url("../webfonts/InterDisplay-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* ===== 标题统一走 InterDisplay =====
+   含 Markdown 正文标题（.article-body h1~h4）、卡片标题（.card h3）、
+   页面标题与品牌字（.brand / .footer-brand）。
+   未提供静态档位的字重由浏览器合成；中文仍回退 Noto Sans SC。 */
+h1, h2, h3, h4, h5, h6,
+.brand,
+.footer-brand {
+  font-family: "InterDisplay", "Inter", "Noto Sans SC", -apple-system,
+    BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}

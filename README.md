@@ -5,7 +5,11 @@
 ## 目录结构
 
     index.html          # 单文件 SPA（路由/视图/动效/搜索/标签筛选）
-    fonts/              # 本地打包字体（SF Pro / JetBrains Mono / Noto Sans SC）
+    assets/
+      inter.css         # Inter 字体声明（正文 Inter / 标题 InterDisplay）
+      blog.css          # 博客自定义样式
+    webfonts/           # Inter 4.1 网页字体（正文 Inter、标题 InterDisplay 各 4 档字重）
+    fonts/              # 本地打包字体（JetBrains Mono / Noto Sans SC 中文回退）
     images/             # 文章图片（可选，随站点上传）
     data/
       posts.js          # 文章元数据清单（标题/摘要/标签/日期/状态）
@@ -14,9 +18,17 @@
     .nojekyll           # 禁用 Jekyll（必须保留）
     README.md
 
+## 字体
+
+- 西文正文/UI 用 **Inter**，西文标题用 **InterDisplay**（Inter 4.1，本地托管）。
+- 中文由 `Noto Sans SC` 回退承接（Inter 不含 CJK），因此中英文混排会自动分工。
+- 字体文件在 `webfonts/`，声明在 `assets/inter.css`；只保留 400/500/600/700 四档以控制体积。
+- 新增字重：把 woff2 放进 `webfonts/`，在 `assets/inter.css` 补一条 `@font-face` 即可。
+- 许可见 `webfonts/Inter-LICENSE.txt`（SIL Open Font License 1.1）。
+
 ## 部署
 
-1. 推送 `index.html`、`fonts/`、`data/`、`images/`、`.nojekyll` 到 GitHub 仓库。
+1. 推送 `index.html`、`assets/`、`webfonts/`、`fonts/`、`data/`、`images/`、`.nojekyll` 到 GitHub 仓库。
 2. 仓库 **Settings → Pages → Source: Deploy from a branch → main → Save**。
 3. 访问 `https://<用户名>.github.io/<仓库名>/`。
 

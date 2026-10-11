@@ -13,12 +13,10 @@
 <title>裸机思维 · RawLogic</title>
 <link rel="stylesheet" href="fonts/noto-400.css">
 <link rel="stylesheet" href="fonts/noto-700.css">
+<link rel="stylesheet" href="assets/inter.css">
 <style>
-  /* ===== SF Pro Text 本地字体（西文/数字），中文回退系统苹方 ===== */
-  @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Regular.otf") format("opentype"); font-weight:400; font-style:normal; font-display:swap; }
-  @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Medium.otf") format("opentype"); font-weight:500; font-style:normal; font-display:swap; }
-  @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Semibold.otf") format("opentype"); font-weight:600; font-style:normal; font-display:swap; }
-  @font-face { font-family:"SF Pro Text"; src:url("fonts/SF-Pro-Text-Bold.otf") format("opentype"); font-weight:700; font-style:normal; font-display:swap; }
+  /* ===== Inter 字体（西文/数字）：@font-face 见 assets/inter.css，文件在 webfonts/ =====
+     正文用 Inter，标题用 InterDisplay；中文统一回退 Noto Sans SC（Inter 不含 CJK）。 */
   /* 代码字体已移至外部样式表 assets/blog.css（base64 内嵌，file:// 下同样可加载） */
   /* ===== 主题与基础 ===== */
   :root {
@@ -52,8 +50,8 @@
   body {
     background:var(--bg); color:var(--ink);
     -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    /* 西文走本地 SF Pro Text；中文走本地 Noto Sans SC（思源黑体，苹方风开源替代），不依赖系统字体 */
-    font-family:"SF Pro Text", "Noto Sans SC", -apple-system, BlinkMacSystemFont,
+    /* 西文走本地 Inter；中文走本地 Noto Sans SC（思源黑体，苹方风开源替代），不依赖系统字体 */
+    font-family:"Inter", "Noto Sans SC", -apple-system, BlinkMacSystemFont,
       "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
     line-height:1.7;
   }
@@ -399,7 +397,7 @@
     font-size:11px; font-weight:600; color:#94a3b8;
     background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
     border-radius:6px; padding:4px 10px; cursor:pointer;
-    font-family:"SF Pro Text", "Noto Sans SC", system-ui, sans-serif;
+    font-family:"Inter", "Noto Sans SC", system-ui, sans-serif;
     transition:color .2s ease, background-color .2s ease, transform .18s ease;
   }
   .copy-btn:hover { color:#e2e8f0; background:rgba(255,255,255,.12); }
@@ -418,7 +416,7 @@
     box-shadow:0 8px 20px rgba(26,26,26,.22);
     opacity:0; transform:translateY(12px); pointer-events:none;
     transition:opacity .3s ease, transform .3s ease, box-shadow .3s ease;
-    font-family:"SF Pro Text", "Noto Sans SC", system-ui, sans-serif;
+    font-family:"Inter", "Noto Sans SC", system-ui, sans-serif;
   }
   .back-top.show { opacity:1; transform:none; pointer-events:auto; }
   .back-top:hover { transform:translateY(-3px); box-shadow:0 12px 26px rgba(26,26,26,.3); }
@@ -544,7 +542,7 @@
   position: absolute; bottom: 10px; right: 16px; z-index: 2;
   font-size: 10.5px; color: #64748b; text-transform: uppercase;
   letter-spacing: .1em; pointer-events: none;
-  font-family: "SF Pro Text", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: "Inter", "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 .code-wrap > .copy-btn { position: absolute; top: 10px; right: 14px; z-index: 2; }
 
