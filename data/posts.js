@@ -1,7 +1,7 @@
 window.__BLOG_POSTS = [
     {
         "id":  "vscode-cmake-stm32",
-        "status":  "published",
+        "status":  "draft",
         "date":  "2026-09-28",
         "tags":  [
                      "VSCode",
